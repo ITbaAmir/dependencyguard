@@ -1,18 +1,18 @@
-"""DependencyGuard - erster Schritt zur Dependency-Pruefung.
+"""DependencyGuard - first step towards dependency checking.
 
 PSEUDOCODE:
-1. Bestimme den Ordner, der untersucht werden soll.
-2. Suche dort nach bekannten Dependency-Dateien.
-3. Ordne jede gefundene Datei ihrer Programmiersprache zu.
-4. Zeige die Ergebnisse klar an.
-5. Spaeter: Lies Dependencies aus und pruefe Sicherheitswarnungen.
+1. Identify the folder to inspect.
+2. Search the folder for known dependency files.
+3. Match every found file to its programming language.
+4. Display the results clearly.
+5. Later: Read dependencies and check security advisories.
 """
 
 from pathlib import Path
 
 
-# Diese Dateien enthalten Abhaengigkeiten der Sprachen, die DependencyGuard
-# zuerst unterstuetzen soll. Weitere Dateinamen kommen spaeter hinzu.
+# These files contain dependencies for the languages that DependencyGuard
+# will support first. More file names will be added later.
 DEPENDENCY_FILES = {
     "Python": ("requirements.txt", "pyproject.toml", "Pipfile"),
     "JavaScript/TypeScript": ("package.json",),
@@ -39,14 +39,14 @@ def main() -> None:
     project_folder = Path(__file__).resolve().parent
     found_files = find_dependency_files(project_folder)
 
-    print("DependencyGuard - Dependency-Dateien suchen")
-    print(f"Projektordner: {project_folder}")
+    print("DependencyGuard - Finding dependency files")
+    print(f"Project folder: {project_folder}")
 
     if not found_files:
-        print("Keine unterstuetzten Dependency-Dateien gefunden.")
+        print("No supported dependency files found.")
         return
 
-    print("Gefundene Dateien:")
+    print("Found files:")
     for language, dependency_file in found_files:
         print(f"- {language}: {dependency_file.name}")
 
