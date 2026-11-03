@@ -1,0 +1,14 @@
+name: Weekly dependency scan
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+      timezone: "Europe/Berlin"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    uses: ITbaAmir/dependencyguard/.github/workflows/dependencyscan.yml@main
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
