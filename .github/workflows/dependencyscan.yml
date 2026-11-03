@@ -1,0 +1,77 @@
+name: DependencyGuard central scan
+
+on:
+  workflow_call:
+    secrets:
+      TELEGRAM_BOT_TOKEN:
+        required: false
+      TELEGRAM_CHAT_ID:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the project
+        uses: actions/checkout@v4
+
+      - name: Check out DependencyGuard
+        uses: actions/checkout@v4
+        with:
+          repository: ITbaAmir/dependencyguard
+          ref: main
+          path: .dependencyguard
+
+      - name: Run DependencyGuard
+        run: python .dependencyguard/dependencyguard.py --folder . --output dependencyguard-report.json
+
+      - name: Create notification summary
+        id: summary
+        shell: python
+        run: |
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path("dependencyguard-report.json").read_text(encoding="utf-8"))
+          known = [item for item in report["findings"] if item["severity"] == "known"]
+          review = [item for item in report["findings"] if item["severity"] == "medium"]
+
+          message = (
+              "DependencyGuard weekly scan\n\n"
+              f"Repository: {os.environ['GITHUB_REPOSITORY']}\n"
+              f"Known security issues: {len(known)}\n"
+              f"Dependencies needing review: {len(review)}\n\n"
+              f"Open the Actions run for the full report: "
+              f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+          )
+          Path("telegram-message.txt").write_text(message, encoding="utf-8")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"known_count={len(known)}\n")
+
+      - name: Upload scan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependencyguard-report
+          path: dependencyguard-report.json
+          retention-days: 30
+
+      - name: Send Telegram alert
+        if: steps.summary.outputs.known_count != '0' && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl --fail --silent --show-error \
+            --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
+            --data-urlencode "text@telegram-message.txt" \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
+
+      - name: Mark known vulnerabilities as failed
+        if: steps.summary.outputs.known_count != '0'
+        run: exit 1

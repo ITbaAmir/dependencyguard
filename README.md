@@ -39,6 +39,43 @@ source file, package, version, explanation, recommended next step, and any
 security reference. Use **Copy full result** to share it with a teammate or paste
 it into a support request.
 
+## Weekly GitHub scan and Telegram alerts
+
+This repository provides one central reusable GitHub Actions workflow. Keep this
+repository public so projects from different GitHub accounts can use it. It does
+not expose the code of private projects.
+
+In every project to scan, create `.github/workflows/weeklyscan.yml` with this
+small caller workflow:
+
+```yaml
+name: Weekly dependency scan
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+      timezone: "Europe/Berlin"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    uses: ITbaAmir/dependencyguard/.github/workflows/dependencyscan.yml@main
+    secrets:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+```
+
+The caller runs every Monday at 08:00 in Berlin and can also be started manually
+from the repository's **Actions** page. In each scanned repository, add these two
+repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `TELEGRAM_BOT_TOKEN`: token received from BotFather. Never commit or share it.
+- `TELEGRAM_CHAT_ID`: numeric ID of your private chat with the bot.
+
+Telegram is notified only when DependencyGuard finds a known vulnerability. The
+workflow then fails, so GitHub can also send its normal failure notification. A
+JSON report is retained as a workflow artifact for 30 days.
+
 ## Use from the terminal
 
 ```powershell
