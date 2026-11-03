@@ -62,11 +62,15 @@ jobs:
           retention-days: 30
 
       - name: Send Telegram alert
-        if: steps.summary.outputs.known_count != '0' && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        if: steps.summary.outputs.known_count != '0'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets are missing, so no Telegram alert was sent."
+            exit 0
+          fi
           curl --fail --silent --show-error \
             --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" \
             --data-urlencode "text@telegram-message.txt" \
